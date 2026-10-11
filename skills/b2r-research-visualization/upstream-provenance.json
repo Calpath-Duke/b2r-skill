@@ -1,0 +1,62 @@
+{
+  "repository": "https://github.com/K-Dense-AI/scientific-agent-skills",
+  "commit": "92ace75ac21efe19a620434e0ca4e356081fe807",
+  "license": "MIT; both inspected skills declare MIT",
+  "reused_files": [
+    {
+      "upstream_path": "skills/scientific-visualization/scripts/_common.py",
+      "local_path": "scripts/vendor/_common.py",
+      "upstream_sha256": "e4eea2c2e5f5d8cfa544c6bed152cdb88a3d7c7952df99bcd74b45077fd6f707",
+      "local_sha256": "2ec4f97a1831dcf3c5eccf80976ada89f133cdbed5e9b5a8ba7e2f846c69612e"
+    },
+    {
+      "upstream_path": "skills/scientific-visualization/scripts/figure_export.py",
+      "local_path": "scripts/vendor/figure_export.py",
+      "upstream_sha256": "fe9c77878da61297ce55224b67282d128631deb628d930aa1929c9eb7330bf79",
+      "local_sha256": "dc921acd5423c3e7f788c3d5d7699f1043c3c071bdd46ef52bd72286911b64fc"
+    },
+    {
+      "upstream_path": "skills/scientific-visualization/assets/color_palettes.py",
+      "local_path": "scripts/vendor/color_palettes.py",
+      "upstream_sha256": "98ee4aa4b9bbb010996d55144ea6bf45a0ab294009b9bb0ef6d9c5ec9fed5154",
+      "local_sha256": "98ee4aa4b9bbb010996d55144ea6bf45a0ab294009b9bb0ef6d9c5ec9fed5154"
+    }
+  ],
+  "reviewed_not_vendored": [
+    "skills/scientific-visualization/SKILL.md",
+    "skills/scientific-schematics/SKILL.md",
+    "skills/scientific-schematics/scripts/generate_schematic.py",
+    "skills/scientific-schematics/scripts/generate_schematic_ai.py",
+    "skills/scientific-schematics/references/best_practices.md"
+  ],
+  "font": {
+    "source": "https://github.com/google/fonts/tree/main/ofl/notosanssc",
+    "retrieved": "2026-10-11 (Asia/Manila)",
+    "license": "SIL Open Font License 1.1",
+    "modifications": "Static wght=400 instance; renamed B2R Sans SC",
+    "sha256": "f5d97cb2245406ebf357e03e893e8fbd986c06eb111aa4134e2a09fa56ca4ff2"
+  },
+  "v0.2_workflow_adaptation": {
+    "same_upstream_commit": "92ace75ac21efe19a620434e0ca4e356081fe807",
+    "files": [
+      "skills/scientific-schematics/scripts/generate_schematic_ai.py",
+      "skills/scientific-schematics/references/best_practices.md"
+    ],
+    "adopted": [
+      "scientific diagram prompt sections",
+      "composition/readability constraints",
+      "inspect output and revise concrete defects"
+    ],
+    "changed": [
+      "host-provided tools instead of provider client",
+      "independent vector labels and arrows when useful",
+      "no score threshold or universal one-call limit",
+      "versioned actual assets and bounded local edit checks"
+    ],
+    "local_files": [
+      "references/figure-planning.md",
+      "references/host-image-workflow.md"
+    ],
+    "api_client_vendored": false
+  }
+}

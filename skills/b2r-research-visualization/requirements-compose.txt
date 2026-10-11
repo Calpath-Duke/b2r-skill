@@ -1,0 +1,2 @@
+# Optional SVG panel assembly only; Cairo system library may be needed on Windows.
+cairosvg>=2.7,<3
