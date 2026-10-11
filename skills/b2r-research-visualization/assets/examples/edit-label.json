@@ -1,0 +1,12 @@
+{
+  "reason": "Only rename the kinase display label",
+  "changes": [
+    {
+      "target": "node",
+      "id": "kinase",
+      "set": {
+        "label": "Kinase A (active)"
+      }
+    }
+  ]
+}

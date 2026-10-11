@@ -1,0 +1,26 @@
+{
+  "kind": "results",
+  "title": "相对蛋白丰度 · 合成数据",
+  "purpose": "组会",
+  "language": "zh",
+  "mode": "raw_mean_sd",
+  "columns": {
+    "group": "group",
+    "sample_id": "sample_id",
+    "value": "value"
+  },
+  "unit": "relative abundance (a.u.)",
+  "xlabel": "实验分组",
+  "ylabel": "相对丰度（a.u.）",
+  "group_order": [
+    "Control",
+    "Treatment",
+    "Rescue"
+  ],
+  "transform": "none",
+  "replication_unit": "independent synthetic sample",
+  "independence_confirmed": true,
+  "notes": [
+    "Synthetic teaching observations; not experimental results."
+  ]
+}

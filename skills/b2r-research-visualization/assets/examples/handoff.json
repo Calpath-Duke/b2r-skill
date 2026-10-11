@@ -1,0 +1,23 @@
+{
+  "goal": "机制图专业复核",
+  "purpose": "组会",
+  "materials": [
+    "合成教学机制说明"
+  ],
+  "completed": [
+    "矢量结构图已完成"
+  ],
+  "outputs": [
+    "mechanism/v001/source.json",
+    "mechanism/v001/figure.svg"
+  ],
+  "unresolved": [
+    "假设关系需要科学确认"
+  ],
+  "changes": [
+    "希望进行精细素材制作"
+  ],
+  "deadline": "用户尚未提供",
+  "budget": "用户尚未提供",
+  "contact": "未配置；供用户自行提交"
+}

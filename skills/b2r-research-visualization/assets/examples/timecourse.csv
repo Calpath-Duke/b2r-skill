@@ -1,0 +1,9 @@
+group,time,value
+Control,0,1
+Control,1,1.2
+Control,2,NA
+Control,3,1.6
+Treatment,0,1
+Treatment,1,1.5
+Treatment,2,1.8
+Treatment,3,2.1

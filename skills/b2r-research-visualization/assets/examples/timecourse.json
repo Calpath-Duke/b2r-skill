@@ -1,0 +1,22 @@
+{
+  "kind": "results",
+  "title": "Supplied time course · synthetic data",
+  "purpose": "lab meeting",
+  "language": "en",
+  "mode": "line",
+  "columns": {
+    "group": "group",
+    "x": "time",
+    "value": "value"
+  },
+  "unit": "a.u.",
+  "xlabel": "Time (h)",
+  "ylabel": "Response (a.u.)",
+  "missing_values": [
+    "",
+    "NA"
+  ],
+  "notes": [
+    "Control at 2 h is missing; the line must show a gap. No uncertainty supplied."
+  ]
+}

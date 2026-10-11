@@ -1,0 +1,133 @@
+{
+  "kind": "schematic",
+  "title": "Signal-to-response mechanism · synthetic example",
+  "purpose": "lab meeting",
+  "language": "en",
+  "canvas": {
+    "width": 1200,
+    "height": 700,
+    "width_mm": 240,
+    "height_mm": 140
+  },
+  "panels": [
+    {
+      "id": "signal",
+      "label": "Signal relay",
+      "x": 35,
+      "y": 120,
+      "w": 690,
+      "h": 395,
+      "color": "#F5F8FB"
+    },
+    {
+      "id": "response",
+      "label": "Cellular response",
+      "x": 755,
+      "y": 120,
+      "w": 405,
+      "h": 395,
+      "color": "#F7F5FA"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "stimulus",
+      "label": "Stimulus X",
+      "subtitle": "User-defined input",
+      "x": 170,
+      "y": 275,
+      "w": 200,
+      "h": 100,
+      "color": "#DCEBF5",
+      "evidence": "user_confirmed"
+    },
+    {
+      "id": "kinase",
+      "label": "Kinase A",
+      "subtitle": "Confirmed activation",
+      "x": 450,
+      "y": 275,
+      "w": 190,
+      "h": 100,
+      "color": "#DCEFE9",
+      "evidence": "source_explicit",
+      "sources": [
+        "S1"
+      ]
+    },
+    {
+      "id": "factor",
+      "label": "Factor B",
+      "subtitle": "Nuclear regulation",
+      "x": 895,
+      "y": 275,
+      "w": 210,
+      "h": 100,
+      "color": "#E8E0F1",
+      "evidence": "source_explicit",
+      "sources": [
+        "S1"
+      ]
+    },
+    {
+      "id": "outcome",
+      "label": "Response Y",
+      "subtitle": "Hypothesized outcome",
+      "x": 895,
+      "y": 440,
+      "w": 210,
+      "h": 95,
+      "color": "#F4E5DC",
+      "evidence": "author_hypothesis",
+      "sources": [
+        "S1"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "stimulus",
+      "to": "kinase",
+      "relation": "activation",
+      "label": "activates",
+      "evidence": "user_confirmed"
+    },
+    {
+      "id": "e2",
+      "from": "kinase",
+      "to": "factor",
+      "relation": "inhibition",
+      "label": "inhibits",
+      "evidence": "source_explicit",
+      "sources": [
+        "S1"
+      ]
+    },
+    {
+      "id": "e3",
+      "from": "factor",
+      "to": "outcome",
+      "relation": "activation",
+      "label": "proposed",
+      "label_x": 1060,
+      "label_y": 365,
+      "evidence": "author_hypothesis",
+      "sources": [
+        "S1"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "S1",
+      "citation": "B2R synthetic teaching note; NOT a real publication",
+      "locator": "Example paragraph 1",
+      "excerpt": "Kinase A inhibits Factor B. We hypothesize that Factor B activates Response Y.",
+      "verified": true
+    }
+  ],
+  "notes": [
+    "All entities and observations are synthetic. This example establishes no biomedical mechanism."
+  ]
+}

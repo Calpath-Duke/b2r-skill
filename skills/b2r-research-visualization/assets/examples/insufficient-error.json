@@ -1,0 +1,15 @@
+{
+  "kind": "results",
+  "title": "已有结果 · 误差定义待确认",
+  "purpose": "组会",
+  "language": "zh",
+  "mode": "summary_point",
+  "columns": {
+    "group": "group",
+    "value": "estimate",
+    "error": "error",
+    "n": "n"
+  },
+  "unit": "a.u.",
+  "replication_unit": "independent synthetic sample"
+}

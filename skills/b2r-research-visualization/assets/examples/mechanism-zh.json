@@ -1,0 +1,133 @@
+{
+  "kind": "schematic",
+  "title": "刺激—响应机制 · 合成教学示例",
+  "purpose": "组会",
+  "language": "zh",
+  "canvas": {
+    "width": 1200,
+    "height": 700,
+    "width_mm": 240,
+    "height_mm": 140
+  },
+  "panels": [
+    {
+      "id": "signal",
+      "label": "信号传递",
+      "x": 35,
+      "y": 120,
+      "w": 690,
+      "h": 395,
+      "color": "#F5F8FB"
+    },
+    {
+      "id": "response",
+      "label": "细胞响应",
+      "x": 755,
+      "y": 120,
+      "w": 405,
+      "h": 395,
+      "color": "#F7F5FA"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "stimulus",
+      "label": "刺激 X",
+      "subtitle": "用户提供的输入",
+      "x": 170,
+      "y": 275,
+      "w": 200,
+      "h": 100,
+      "color": "#DCEBF5",
+      "evidence": "user_confirmed"
+    },
+    {
+      "id": "kinase",
+      "label": "Kinase A",
+      "subtitle": "已确认的激活",
+      "x": 450,
+      "y": 275,
+      "w": 190,
+      "h": 100,
+      "color": "#DCEFE9",
+      "evidence": "source_explicit",
+      "sources": [
+        "S1"
+      ]
+    },
+    {
+      "id": "factor",
+      "label": "Factor B",
+      "subtitle": "核内调控",
+      "x": 895,
+      "y": 275,
+      "w": 210,
+      "h": 100,
+      "color": "#E8E0F1",
+      "evidence": "source_explicit",
+      "sources": [
+        "S1"
+      ]
+    },
+    {
+      "id": "outcome",
+      "label": "响应 Y",
+      "subtitle": "作者提出的假设",
+      "x": 895,
+      "y": 440,
+      "w": 210,
+      "h": 95,
+      "color": "#F4E5DC",
+      "evidence": "author_hypothesis",
+      "sources": [
+        "S1"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "stimulus",
+      "to": "kinase",
+      "relation": "activation",
+      "label": "激活",
+      "evidence": "user_confirmed"
+    },
+    {
+      "id": "e2",
+      "from": "kinase",
+      "to": "factor",
+      "relation": "inhibition",
+      "label": "抑制",
+      "evidence": "source_explicit",
+      "sources": [
+        "S1"
+      ]
+    },
+    {
+      "id": "e3",
+      "from": "factor",
+      "to": "outcome",
+      "relation": "activation",
+      "label": "待验证",
+      "label_x": 1060,
+      "label_y": 365,
+      "evidence": "author_hypothesis",
+      "sources": [
+        "S1"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "S1",
+      "citation": "B2R synthetic teaching note; NOT a real publication",
+      "locator": "Example paragraph 1",
+      "excerpt": "Kinase A inhibits Factor B. We hypothesize that Factor B activates Response Y.",
+      "verified": true
+    }
+  ],
+  "notes": [
+    "All entities and observations are synthetic. This example establishes no biomedical mechanism."
+  ]
+}

@@ -1,0 +1,13 @@
+group,sample_id,value
+Control,C1,1.00
+Control,C2,1.12
+Control,C3,0.95
+Control,C4,1.08
+Treatment,T1,1.42
+Treatment,T2,1.61
+Treatment,T3,1.53
+Treatment,T4,1.48
+Rescue,R1,1.11
+Rescue,R2,1.18
+Rescue,R3,1.02
+Rescue,R4,1.14

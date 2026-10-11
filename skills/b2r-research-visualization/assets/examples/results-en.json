@@ -1,0 +1,26 @@
+{
+  "kind": "results",
+  "title": "Relative protein abundance · synthetic data",
+  "purpose": "lab meeting",
+  "language": "en",
+  "mode": "raw_mean_sd",
+  "columns": {
+    "group": "group",
+    "sample_id": "sample_id",
+    "value": "value"
+  },
+  "unit": "relative abundance (a.u.)",
+  "xlabel": "Condition",
+  "ylabel": "Relative abundance (a.u.)",
+  "group_order": [
+    "Control",
+    "Treatment",
+    "Rescue"
+  ],
+  "transform": "none",
+  "replication_unit": "independent synthetic sample",
+  "independence_confirmed": true,
+  "notes": [
+    "Synthetic teaching observations; not experimental results."
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "image_generation": "unavailable",
+  "image_editing": "unavailable",
+  "external_service": "unavailable",
+  "web_search": "unknown",
+  "notes": [
+    "Test scenario: no image generation or external API. Local vector/data paths remain usable."
+  ]
+}

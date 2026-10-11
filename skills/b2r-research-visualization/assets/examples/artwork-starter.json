@@ -1,0 +1,477 @@
+{
+  "kind": "artwork",
+  "title": "空间机制草稿 · 教学设定",
+  "purpose": "组会教学机制图",
+  "language": "en",
+  "canvas": {
+    "width": 1600,
+    "height": 990,
+    "width_mm": 280,
+    "height_mm": 173.25
+  },
+  "objects": [
+    {
+      "id": "cytoplasm",
+      "type": "region",
+      "role": "cytoplasm",
+      "x": 800,
+      "y": 616,
+      "w": 1480,
+      "h": 520,
+      "fill": "#F3F8F7",
+      "stroke": "#F3F8F7",
+      "z": 0
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "role": "From membrane reception to a nuclear response",
+      "text": "空间机制草稿 · 教学设定",
+      "x": 65,
+      "y": 55,
+      "font_size": 20,
+      "fill": "#233D4A",
+      "align": "left",
+      "z": 15
+    },
+    {
+      "id": "subtitle",
+      "type": "text",
+      "role": "L1 / R1 / K1  •  a synthetic teaching model",
+      "text": "L1 / R1 / K1  •  a synthetic teaching model",
+      "x": 65,
+      "y": 116,
+      "font_size": 10,
+      "fill": "#70838B",
+      "align": "left",
+      "z": 15
+    },
+    {
+      "id": "outside",
+      "type": "text",
+      "role": "EXTRACELLULAR",
+      "text": "EXTRACELLULAR",
+      "x": 85,
+      "y": 266,
+      "font_size": 9,
+      "fill": "#6D8C93",
+      "align": "left",
+      "z": 15
+    },
+    {
+      "id": "cyto-label",
+      "type": "text",
+      "role": "CYTOPLASM",
+      "text": "CYTOPLASM",
+      "x": 85,
+      "y": 438,
+      "font_size": 9,
+      "fill": "#6D8C93",
+      "align": "left",
+      "z": 15
+    },
+    {
+      "id": "membrane-label",
+      "type": "text",
+      "role": "Plasma membrane",
+      "text": "Plasma membrane",
+      "x": 1440,
+      "y": 310,
+      "font_size": 9,
+      "fill": "#6D8C93",
+      "align": "center",
+      "z": 15
+    },
+    {
+      "id": "membrane",
+      "type": "membrane",
+      "role": "membrane",
+      "x": 800,
+      "y": 350,
+      "w": 1470,
+      "h": 66,
+      "fill": "#C9E0DF",
+      "stroke": "#91B6B8",
+      "z": 2
+    },
+    {
+      "id": "receptor",
+      "type": "receptor",
+      "role": "receptor",
+      "x": 370,
+      "y": 350,
+      "w": 100,
+      "h": 195,
+      "fill": "#6DB4B6",
+      "stroke": "#357A86",
+      "z": 5,
+      "attachment": {
+        "target": "membrane",
+        "mode": "on_membrane"
+      },
+      "aliases": [
+        "受体",
+        "R1",
+        "膜受体"
+      ]
+    },
+    {
+      "id": "ligand",
+      "type": "protein",
+      "role": "ligand",
+      "x": 310,
+      "y": 202,
+      "w": 72,
+      "h": 55,
+      "fill": "#E7B75D",
+      "stroke": "#B98B40",
+      "z": 6,
+      "aliases": [
+        "配体",
+        "L1"
+      ]
+    },
+    {
+      "id": "ligand-label",
+      "type": "text",
+      "role": "L1",
+      "text": "L1",
+      "x": 237,
+      "y": 200,
+      "font_size": 13,
+      "fill": "#233D4A",
+      "align": "center",
+      "z": 15
+    },
+    {
+      "id": "receptor-label",
+      "type": "text",
+      "role": "R1",
+      "text": "R1",
+      "x": 466,
+      "y": 392,
+      "font_size": 13,
+      "fill": "#233D4A",
+      "align": "center",
+      "z": 15,
+      "aliases": [
+        "R1标签",
+        "受体标签"
+      ]
+    },
+    {
+      "id": "binding-label",
+      "type": "text",
+      "role": "Binding",
+      "text": "Binding",
+      "x": 466,
+      "y": 242,
+      "font_size": 9,
+      "fill": "#8C784C",
+      "align": "center",
+      "z": 15
+    },
+    {
+      "id": "binding",
+      "type": "arrow",
+      "role": "binding",
+      "from": "ligand",
+      "to": "receptor",
+      "relation": "association",
+      "evidence": "user_confirmed",
+      "stroke": "#B99A60",
+      "z": 9
+    },
+    {
+      "id": "kinase",
+      "type": "protein",
+      "role": "kinase",
+      "x": 705,
+      "y": 568,
+      "w": 136,
+      "h": 108,
+      "fill": "#B4DADC",
+      "stroke": "#438A96",
+      "z": 7,
+      "attachment": {
+        "target": "cytoplasm",
+        "mode": "inside"
+      },
+      "aliases": [
+        "激酶",
+        "K1"
+      ]
+    },
+    {
+      "id": "kinase-label",
+      "type": "text",
+      "role": "K1",
+      "text": "K1",
+      "x": 705,
+      "y": 568,
+      "font_size": 15,
+      "fill": "#233D4A",
+      "align": "center",
+      "z": 15
+    },
+    {
+      "id": "activation",
+      "type": "arrow",
+      "role": "activation",
+      "from": "receptor",
+      "to": "kinase",
+      "relation": "activation",
+      "evidence": "user_confirmed",
+      "stroke": "#326B74",
+      "z": 9,
+      "via": [
+        [
+          440,
+          500
+        ],
+        [
+          605,
+          500
+        ]
+      ]
+    },
+    {
+      "id": "activation-label",
+      "type": "text",
+      "role": "Activation",
+      "text": "Activation",
+      "x": 490,
+      "y": 471,
+      "font_size": 10,
+      "fill": "#426F78",
+      "align": "center",
+      "z": 15
+    },
+    {
+      "id": "inhibitor",
+      "type": "protein",
+      "role": "inhibitor",
+      "x": 700,
+      "y": 776,
+      "w": 100,
+      "h": 62,
+      "fill": "#EBD2B0",
+      "stroke": "#BD8B51",
+      "z": 7,
+      "attachment": {
+        "target": "cytoplasm",
+        "mode": "inside"
+      },
+      "aliases": [
+        "抑制剂",
+        "I1"
+      ]
+    },
+    {
+      "id": "inhibitor-label",
+      "type": "text",
+      "role": "I1",
+      "text": "I1",
+      "x": 700,
+      "y": 777,
+      "font_size": 12,
+      "fill": "#233D4A",
+      "align": "center",
+      "z": 15
+    },
+    {
+      "id": "inhibition",
+      "type": "arrow",
+      "role": "inhibition",
+      "from": "inhibitor",
+      "to": "kinase",
+      "relation": "inhibition",
+      "evidence": "user_confirmed",
+      "stroke": "#B07B43",
+      "z": 9
+    },
+    {
+      "id": "inhibition-label",
+      "type": "text",
+      "role": "Inhibition",
+      "text": "Inhibition",
+      "x": 788,
+      "y": 690,
+      "font_size": 9,
+      "fill": "#906B43",
+      "align": "center",
+      "z": 15
+    },
+    {
+      "id": "nucleus",
+      "type": "ellipse",
+      "role": "nucleus",
+      "x": 1190,
+      "y": 623,
+      "w": 470,
+      "h": 315,
+      "fill": "#DDECF0",
+      "stroke": "#628A91",
+      "z": 3,
+      "aliases": [
+        "细胞核",
+        "右侧细胞核插画"
+      ]
+    },
+    {
+      "id": "gene-region",
+      "type": "region",
+      "role": "gene-region",
+      "x": 1224,
+      "y": 620,
+      "w": 250,
+      "h": 94,
+      "fill": "#F8FCFC",
+      "stroke": "#B6D9DA",
+      "z": 6,
+      "line_width": 0.8,
+      "aliases": [
+        "Gene G1区域"
+      ]
+    },
+    {
+      "id": "gene-label",
+      "type": "text",
+      "role": "Gene G1",
+      "text": "Gene G1",
+      "x": 1224,
+      "y": 606,
+      "font_size": 13,
+      "fill": "#233D4A",
+      "align": "center",
+      "z": 15
+    },
+    {
+      "id": "gene-expression",
+      "type": "text",
+      "role": "expression",
+      "text": "expression",
+      "x": 1224,
+      "y": 640,
+      "font_size": 9,
+      "fill": "#6A848C",
+      "align": "center",
+      "z": 15
+    },
+    {
+      "id": "hypothesis",
+      "type": "arrow",
+      "role": "hypothesis",
+      "from": "kinase",
+      "to": "gene-region",
+      "relation": "activation",
+      "evidence": "user_hypothesis",
+      "stroke": "#8E789B",
+      "z": 9,
+      "via": [
+        [
+          889,
+          568
+        ],
+        [
+          967,
+          620
+        ]
+      ]
+    },
+    {
+      "id": "hypothesis-label",
+      "type": "text",
+      "role": "Proposed increase",
+      "text": "Proposed increase",
+      "x": 903,
+      "y": 500,
+      "font_size": 10,
+      "fill": "#806B8E",
+      "align": "center",
+      "z": 15
+    },
+    {
+      "id": "hypothesis-question",
+      "type": "text",
+      "role": "Hypothesis ?",
+      "text": "Hypothesis ?",
+      "x": 903,
+      "y": 533,
+      "font_size": 8.5,
+      "fill": "#806B8E",
+      "align": "center",
+      "z": 15
+    },
+    {
+      "id": "nucleus-label",
+      "type": "text",
+      "role": "NUCLEUS",
+      "text": "NUCLEUS",
+      "x": 1190,
+      "y": 871,
+      "font_size": 9,
+      "fill": "#6D8C93",
+      "align": "center",
+      "z": 15
+    },
+    {
+      "id": "stage-1",
+      "type": "text",
+      "role": "01   RECEPTION",
+      "text": "01   RECEPTION",
+      "x": 318,
+      "y": 145,
+      "font_size": 9,
+      "fill": "#708991",
+      "align": "center",
+      "z": 15
+    },
+    {
+      "id": "stage-2",
+      "type": "text",
+      "role": "02   SIGNAL",
+      "text": "02   SIGNAL",
+      "x": 670,
+      "y": 438,
+      "font_size": 9,
+      "fill": "#708991",
+      "align": "center",
+      "z": 15
+    },
+    {
+      "id": "stage-3",
+      "type": "text",
+      "role": "03   RESPONSE",
+      "text": "03   RESPONSE",
+      "x": 1184,
+      "y": 438,
+      "font_size": 9,
+      "fill": "#708991",
+      "align": "center",
+      "z": 15
+    },
+    {
+      "id": "footer",
+      "type": "text",
+      "role": "Solid: supplied relationships   ·   Dashed: hypothesis   ·   Illustrative; not to scale",
+      "text": "Solid: supplied relationships   ·   Dashed: hypothesis   ·   Illustrative; not to scale",
+      "x": 65,
+      "y": 936,
+      "font_size": 8,
+      "fill": "#6F8189",
+      "align": "left",
+      "z": 15
+    }
+  ],
+  "materials": [
+    "为组会制作专业、清楚的机制图，图内英文。教学设定：细胞外 L1 与膜上 R1 结合；R1 激活胞质 K1；I1 抑制 K1；K1 可能促进核内 Gene G1 表达，最后一条为假设。没有其他生物机制。希望后续方便修改。"
+  ],
+  "sources": [],
+  "notes": [
+    "K1 → Gene G1 为教学设定中的待验证假设；不代表真实实验机制。",
+    "细胞核纹理仅为视觉简化；全部标签与关系由矢量层表达。",
+    "无生图素材的安装样例；不代表精细插画能力已完成。"
+  ],
+  "calls": []
+}
