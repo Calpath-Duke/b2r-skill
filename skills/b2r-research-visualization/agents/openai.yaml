@@ -1,0 +1,4 @@
+interface:
+  display_name: "B2R AI 科研可视化"
+  short_description: "默认英文科研图，共享规划生成 Classic 与 Refined 双方案，支持选图修改"
+  default_prompt: "使用 $b2r-research-visualization 将我的科研描述制作成专业科研图件。"
