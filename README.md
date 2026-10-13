@@ -14,12 +14,12 @@ https://github.com/Calpath-Duke/b2r-skill/tree/main/skills/b2r-research-visualiz
 
 无需访问私有仓库，也无需提供私人 GitHub Token。安装器若报告目录已存在，请让 AI 先将旧目录备份到技能扫描目录以外，再安装；失败时恢复备份。不同 Codex 版本的默认目录可能不同，以安装器实际报告为准。当前官方文档列出用户 `~/.agents/skills/` 和项目 `.agents/skills/`；安装脚本也支持显式 `--dest`。不要重复安装到多个扫描位置。
 
-**本地 ZIP 导入**：从 [Releases](https://github.com/Calpath-Duke/b2r-skill/releases) 下载 `B2R-Skill-0.3.8.zip`，不要把 GitHub 自动生成的整个仓库 ZIP 当作单个 Skill 包。
+**本地 ZIP 导入**：从 [Releases](https://github.com/Calpath-Duke/b2r-skill/releases) 下载 `B2R-Skill-0.3.9.zip`，不要把 GitHub 自动生成的整个仓库 ZIP 当作单个 Skill 包。
 
 | 客户端 | 最短路径 | 安装验证状态 |
 |---|---|---|
 | Codex | 上述完整 GitHub 目录交给 Skill Installer；或将 ZIP 内完整 `b2r-research-visualization` 目录安装至客户端识别的位置 | 以本次 Release 验证记录为准 |
-| WorkBuddy | 技能管理 → 添加/上传技能 → 导入 ZIP 并启用。若客户端要求根级 SKILL.md，使用同版 `B2R-WorkBuddy-0.3.8-format-only.zip` | 格式包来自同一核心；桌面实际导入待验证 |
+| WorkBuddy | 技能管理 → 添加/上传技能 → 导入 ZIP 并启用。若客户端要求根级 SKILL.md，使用同版 `B2R-WorkBuddy-0.3.9-format-only.zip` | 格式包来自同一核心；桌面实际导入待验证 |
 | 豆包工作 | 在支持自定义技能的工作入口打开“技能・连接器・伙伴”，选择本地导入；优先尝试标准 ZIP | 官方确认本地技能导入；具体 ZIP 层级及实机导入待验证。普通豆包聊天不等同于豆包工作 |
 
 如果客户端不接受包，不要只上传 SKILL.md：需要一起保留 scripts、references、assets 和许可文件。记录客户端版本和导入报错，在 [Issues](https://github.com/Calpath-Duke/b2r-skill/issues) 反馈，不附 Token、患者资料或未授权研究文件。
