@@ -19,7 +19,7 @@ VENDOR = Path(__file__).resolve().parent / "vendor"
 sys.path.insert(0, str(VENDOR))
 from _common import CliError, checked_input_file, atomic_write_bytes
 
-VERSION = "0.3.8"
+VERSION = "0.3.9"
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 FONT = SKILL_ROOT / "assets/fonts/B2RSansSC-Regular.ttf"
 

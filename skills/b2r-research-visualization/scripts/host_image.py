@@ -44,6 +44,7 @@ def capture(image,record,folder,parent=None):
     source=checked_input_file(image)
     # Decode before copying. The caller must already have a genuine host artifact.
     with Image.open(source) as im:
+        source_format=im.format
         im.load();im=im.copy()
     from figure_brief import prepare_context,save_context
     figure_context=prepare_context(record,source)
@@ -52,9 +53,18 @@ def capture(image,record,folder,parent=None):
     contract=observations.get('figure_contract') if isinstance(observations,dict) else None
     if contract is not None:
         from scientific_qa import evaluate
-        scientific_report=evaluate(contract,observations.get('scientific_observation'),source)
+        scientific_report=evaluate(contract,observations.get('scientific_observation'),source,observations.get('evidence_ledger'))
+        prior=Path(parent).resolve().parent if parent else None
+        if prior and prior.name=='original': prior=prior.parent
+        if prior and (prior/'scientific-qa.json').is_file() and (prior/'figure-contract.json').is_file():
+            previous=json.loads((prior/'scientific-qa.json').read_text())
+            delivered=json.loads((prior/'source.json').read_text()).get('original_sha256') if (prior/'source.json').is_file() else None
+            if previous.get('image_sha256') in {digest(parent),delivered if Path(parent).name=='figure.png' else None}:
+                from scientific_qa import revision_review
+                scientific_report['revision']=revision_review(previous,json.loads((prior/'figure-contract.json').read_text()),scientific_report,contract)
     elif isinstance(observations,dict):
         require('scientific_observation' not in observations,'科学观察需要对应 figure_contract')
+        require('evidence_ledger' not in observations,'证据台账需要对应 figure_contract')
     option=observations.get('figure_option') if isinstance(observations,dict) else None
     option_record={}
     if option is not None:
@@ -67,13 +77,27 @@ def capture(image,record,folder,parent=None):
         text_value(record.get('requested_change'),'requested_change',10000)
         require(record.get('change_origin','user_feedback') in {'user_feedback','visual_qa'},'change_origin 需为 user_feedback 或 visual_qa')
     (folder/'original').mkdir();shutil.copyfile(source,folder/'original'/source.name)
-    im.save(folder/'figure.png')
+    if source_format == 'PNG':
+        shutil.copyfile(source,folder/'figure.png')
+    else:
+        im.save(folder/'figure.png','PNG')
+    source_hash, final_hash = digest(source), digest(folder/'figure.png')
+    image_delivery={'source_file':'original/'+source.name,'source_format':source_format,
+                    'source_sha256':source_hash,'final_file':'figure.png','final_sha256':final_hash,
+                    'operation':'byte_preserving_copy' if source_format == 'PNG' else 'decoded_image_to_png',
+                    'same_bytes':source_hash == final_hash,
+                    'qa_input_sha256':source_hash,
+                    'final_png_review':'SAME_ARTIFACT_AS_SOURCE' if source_hash == final_hash else 'NEEDS_REVIEW'}
+    if scientific_report is not None:
+        # Conversion is not a new observation. Never replace the supplied hash.
+        scientific_report['image_delivery']=image_delivery
     # PDF is explicitly a raster presentation export, not independent SVG text.
     rgba=im.convert('RGBA');paper=Image.new('RGBA',rgba.size,'white');paper.alpha_composite(rgba)
     paper.convert('RGB').save(folder/'figure.pdf','PDF',resolution=150,quality=95)
-    details={'decoded':True,'pixels':list(im.size),'source_sha256':digest(source),'pdf':'raster image on white; 150 dpi nominal layout, no added detail'}
+    details={'decoded':True,'pixels':list(im.size),'source_sha256':source_hash,'image_delivery':image_delivery,'pdf':'raster image on white; 150 dpi nominal layout, no added detail'}
     source_record={'kind':'host_image','original':'original/'+source.name,'original_sha256':digest(source),'calls':'calls.json','model':record['model'],'reproducibility':'Exact original bytes retained; model regeneration is not deterministic and is not invoked by this package.'}
     source_record.update(option_record)
+    source_record['image_delivery']=image_delivery
     if parent_file:
         (folder/'reference').mkdir();shutil.copyfile(parent_file,folder/'reference'/parent_file.name)
         diff=compare_edit(parent_file,folder/'figure.png',record.get('expected_regions',[]))
@@ -90,6 +114,10 @@ def capture(image,record,folder,parent=None):
     if scientific_report is not None:
         write_json(folder/'figure-contract.json',contract)
         write_json(folder/'scientific-qa.json',scientific_report)
+        if observations.get('evidence_ledger') is not None:
+            write_json(folder/'evidence-ledger.json',observations['evidence_ledger'])
+        if scientific_report['evidence_qa'] is not None:
+            write_json(folder/'evidence-qa.json',scientific_report['evidence_qa'])
     write_json(folder/'qa.json',{'file_checks':details,'visual_review':record.get('visual_review','PENDING'),'scientific_review':'PENDING','figure_quality_gate':gate,'scientific_qa':scientific_report})
     notes='AI 科研插画已保存（PNG / PDF）。直接用自然语言继续修改，例如“提高标签可读性，保留科学关系与其余结构”。\n本版主体、文字和线条都在位图内；修改内部元素需宿主图片编辑，不是全图可编辑 SVG。原图与调用记录随附。'
     if option is not None:
@@ -103,7 +131,11 @@ def capture(image,record,folder,parent=None):
     if record.get('asset_credits'):notes+='\n使用第三方素材参考，署名见 ATTRIBUTION.md；传播图件时请携带相应署名。'
     if scientific_report:
         notes+='\n关系契约与需求/证据/图像三类核对见 figure-contract.json / scientific-qa.json。'
+        if scientific_report.get('revision',{}).get('unrequested_regressions'):
+            notes+='\n本次修改使未要求变化的科学关系变差：'+'、'.join(scientific_report['revision']['unrequested_regressions'])+'；见 scientific-qa.json 的 revision。'
         if scientific_report['disposition']=='REVIEW_DRAFT':
             notes+='\n评审稿：发现关键科学内容冲突，不能作为科学核验通过的正式图件。'
     status='REVIEW_DRAFT' if scientific_report and scientific_report['disposition']=='REVIEW_DRAFT' else 'GENERATED_REVIEW_PENDING'
-    return finish(folder,{'kind':'host_image','status':status,'review_state':{'visual':record.get('visual_review','PENDING'),'scientific':'PENDING','figure_quality_gate':gate,'scientific_qa_disposition':scientific_report['disposition'] if scientific_report else 'NOT_REQUESTED','notice':'总体状态保留待复核；画面是否已查看见 visual，不能替代专家科学复核。'},'editability':{'raster':'whole image; labels are not independent unless separately supplied'},'source_model':record['model'],**option_record},notes)
+    if source_hash != final_hash:
+        notes+='\n输入已转换为 PNG；原有观察与 QA 仍绑定原文件，最终 figure.png 需另行查看，不能继承原图 PASS。转换与哈希见 source.json。'
+    return finish(folder,{'kind':'host_image','status':status,'review_state':{'visual':record.get('visual_review','PENDING'),'scientific':'PENDING','final_png':image_delivery['final_png_review'],'figure_quality_gate':gate,'scientific_qa_disposition':scientific_report['disposition'] if scientific_report else 'NOT_REQUESTED','notice':'总体状态保留待复核；visual 与 QA 是输入图的观察，final_png 另列是否同一文件；不能替代专家科学复核。'},'editability':{'raster':'whole image; labels are not independent unless separately supplied'},'source_model':record['model'],**option_record},notes)
