@@ -18,6 +18,17 @@
 
 0.3.6 将 visual-workflow.md 的有效布局指导合并至 references/figure-planning.md，宿主契约仍在 host-image-workflow.md；删除旧导航重复文件，保留上述上游归属与 MIT 条件。未复制 BioRender / FigureLabs 的素材、模板或产品代码。
 
+## 0.3.9 数据图规则参考（只吸收规则，未复制代码）
+
+2026-10-13 阅读以下仓库的公开文件，只把规则改写进 B2R 自有的 results.py / input-contracts.md；没有复制源代码、样式文件、模板或示例数据，也没有新增依赖。
+
+- SciencePlots（garrettj403/SciencePlots，commit `b9b16959570bd2fbc9ff5118bacc423c3bddd592`，MIT，Copyright (c) 2018 John Garrett）：参考 `science.mplstyle` 的克制坐标轴原则（细轴线、无网格、无图例框）。B2R 用自有参数实现（0.8 pt 深色轴、向外刻度），未采用其 LaTeX / 衬线字体 / 向内刻度，未 vendoring mplstyle。
+- nature-skills（Yuan1z0825/nature-skills，commit `473e8d7b1b918fe37208d3a5e143a3ac9af4c91b`，Apache-2.0）：参考 nature-figure 的 QA 契约与图注约定——图注需写明 n、生物学/技术重复、中心与离散统计量；配对单位应检查配对差值。B2R 将其落实为 caption.json 字段与 raw_paired 描述性差值，未复制文本。
+- science-plotting-skill（Yilin399/science-plotting-skill，commit `9f9234aef7c117e0d079a1b07f84b29cf086e4ba`，MIT，Copyright (c) 2026 G15）：参考“宽表 = 每列一组 / 长表 = 每行一个观测”的识别思路与“优先原始点而非仅柱图”的选择原则。宽表展开、来源追踪与追问逻辑由 B2R 实现。
+- K-Dense scientific-agent-skills：仍使用上文固定 commit 的已 vendoring 文件，本轮未重新复制；上游 HEAD 已更新至 `a1043ef544e3a100c28e70a736b6cf32554d0677`，未逐文件比对。
+
+技术重复聚合、配对/重复测量识别、Tukey 箱线、逐个体时间曲线、inspect-data 结构识别与全部测试由 B2R 新增。
+
 ## 字体
 
 Google Fonts Noto Sans SC： https://github.com/google/fonts/tree/main/ofl/notosanssc ，2026-10-11 取回；SIL OFL 1.1 原文在 assets/fonts/OFL.txt。下载文件默认可变轴 wght=100，B2R 制作 wght=400 静态实例，并重命名为 B2R Sans SC（assets/fonts/B2RSansSC-Regular.ttf），遵守派生字体名称条件。字体许可与代码 MIT 独立，字体不能单独售卖，派生字体保留 OFL。哈希见 provenance。
