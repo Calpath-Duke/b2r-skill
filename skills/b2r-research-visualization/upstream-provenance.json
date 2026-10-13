@@ -58,5 +58,25 @@
       "references/host-image-workflow.md"
     ],
     "api_client_vendored": false
-  }
+  },
+  "v0.3.9_rules_adopted_not_vendored": [
+    {
+      "repository": "https://github.com/garrettj403/SciencePlots",
+      "commit": "b9b16959570bd2fbc9ff5118bacc423c3bddd592",
+      "license": "MIT",
+      "used": "science.mplstyle axis restraint principles (re-implemented)"
+    },
+    {
+      "repository": "https://github.com/Yuan1z0825/nature-skills",
+      "commit": "473e8d7b1b918fe37208d3a5e143a3ac9af4c91b",
+      "license": "Apache-2.0",
+      "used": "nature-figure statistics legend minimum and paired-difference rule (re-implemented)"
+    },
+    {
+      "repository": "https://github.com/Yilin399/science-plotting-skill",
+      "commit": "9f9234aef7c117e0d079a1b07f84b29cf086e4ba",
+      "license": "MIT",
+      "used": "wide/long table recognition and raw-points-first choice (re-implemented)"
+    }
+  ]
 }
