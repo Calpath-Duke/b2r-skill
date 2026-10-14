@@ -6,16 +6,34 @@ recognizes images nor verifies papers, and never certifies scientific truth.
 from datetime import date
 import hashlib
 import json
+import re
 
 from common import require, text_value, digest
 from visual_grammar import (GRAMMAR, OBSERVED_ENCODINGS, OBSERVED_DEPICTIONS,
-                            relation_encoding, entity_depiction, validate_grammar)
+                            relation_encoding, entity_depiction, validate_grammar, modification_marker)
 
 RELATIONS = set(GRAMMAR)
 DIRECTED = {'activation', 'inhibition', 'neutralization', 'cleavage', 'degradation',
-            'migration', 'transport', 'release', 'causation', 'presentation'}
+            'migration', 'transport', 'release', 'causation', 'presentation', 'modification'}
 FIELDS = ('subject', 'relation', 'object', 'direction', 'origin',
           'subject_site', 'object_site', 'label')
+
+# Standard residue abbreviations are notation, not pathway-specific science.
+# Cross-checked against Bio/Data/IUPACData.py in the official Biopython source.
+RESIDUES = dict(zip('ala cys asp glu phe gly his ile lys leu met asn pro gln arg ser thr val trp tyr'.split(),
+                    'ACDEFGHIKLMNPQRSTVWY'))
+
+
+def _site_identity(value):
+    match = re.fullmatch(r'([A-Za-z]{1,3})\s*(\d+)', value.strip())
+    if not match: return None
+    residue, number = match.groups()
+    code = residue.upper() if len(residue)==1 and residue.upper() in RESIDUES.values() else RESIDUES.get(residue.casefold())
+    return (code, int(number)) if code else None
+
+
+def _unresolved(value):
+    return value is None or (isinstance(value,str) and value.strip().casefold() in ('', 'unclear', 'unknown', '?'))
 
 
 def fingerprint(value):
@@ -100,6 +118,32 @@ def glyph_review(target, expected, actual, conditions=''):
     """Compare the glyph the host saw with the relation/entity grammar."""
     missing, differences = [], {}
     if target.startswith('relation:'):
+        if expected['relation'] == 'modification':
+            wanted = {'modification_type': expected['modification_type'],
+                      'marker': modification_marker(expected), 'attached_to': expected['object']}
+            if 'modification_site' in expected:
+                wanted['modification_site'] = expected['modification_site']
+            for key, value in wanted.items():
+                seen = actual.get(key)
+                if _unresolved(seen):
+                    missing.append(key)
+                else:
+                    text_value(seen, 'observed '+key, 1000)
+                    same = seen == value
+                    uncertain = False
+                    if key in ('modification_type', 'marker'):
+                        same = seen.strip().casefold() == value.strip().casefold()
+                        if key=='modification_type' and not same:
+                            from visual_grammar import MODIFICATION_MARKERS
+                            uncertain = seen.casefold() not in MODIFICATION_MARKERS or value.casefold() not in MODIFICATION_MARKERS
+                    elif key == 'modification_site':
+                        a,b = _site_identity(value),_site_identity(seen)
+                        same = seen.strip().casefold() == value.strip().casefold() or (a is not None and a==b)
+                        uncertain = not same and (a is None or b is None)
+                    if not same:
+                        differences[key] = {'expected': value, 'observed': seen}
+                        if uncertain:
+                            differences[key]['certainty'] = 'uncertain'
         if conditions:
             shown = actual.get('condition_shown')
             if shown not in {'yes', 'no'}:
@@ -110,7 +154,7 @@ def glyph_review(target, expected, actual, conditions=''):
         allowed, preferred = relation_encoding(expected)
         seen = actual.get('encoding')
         if seen is None or seen == 'unclear':
-            if 'encoding' in expected or seen == 'unclear': missing.append('encoding')
+            if 'encoding' in expected or expected['relation'] == 'modification' or seen == 'unclear': missing.append('encoding')
         else:
             require(seen in OBSERVED_ENCODINGS, 'encoding 观察值无效')
             if seen not in allowed:
@@ -158,7 +202,8 @@ def contract_clash(contract, seen):
             return target, 'opposite causal polarity or reversed directed relation'
         targeted = rel['relation'] in TARGETED or (rel['relation'] == 'binding' and kinds.get(s) == 'antibody')
         seen_targeted = seen['relation'] in TARGETED or (seen['relation'] == 'binding' and kinds.get(s) == 'antibody')
-        if s == rel['subject'] and targeted and seen_targeted and o != rel['object']:
+        modification = rel['relation'] == seen['relation'] == 'modification'
+        if s == rel['subject'] and ((targeted and seen_targeted) or modification) and o != rel['object']:
             return target, f"planned {rel['relation']} drawn onto a different object"
     return None
 
@@ -203,6 +248,9 @@ def contract_from_brief(brief):
                                        else 'unverified', 'sources': [],
                                        'brief_source': r['source']},
                           'requirement': {'status': 'uncertain', 'note': 'Brief 已转换，宿主需核对原话与方向/区室。'}})
+        if r['type'] == 'modification':
+            for key in ('modification_type', 'modification_site', 'marker'):
+                if key in r: relations[-1][key] = r[key]
     return {'schema_version': 1, 'id': 'brief-contract', 'original_request': brief['original_request'],
             'entities': [{k: e[k] for k in ('id', 'label', 'kind')} for e in brief['entities']],
             'relations': relations,
@@ -263,15 +311,22 @@ def evaluate(contract, observation, image, evidence_ledger=None):
                 require(isinstance(actual, dict), 'observed 必须为对象')
                 fields = [k for k in FIELDS if k in expected] if target.startswith('relation:') else ['value'] if target.startswith('label:') else ['id']
                 missing = [k for k in fields if not isinstance(actual.get(k), str) or not (actual[k].strip() or k == 'label')]
+                if expected.get('relation') == 'modification':
+                    missing = sorted(set(missing) | {k for k in fields if k != 'label' and _unresolved(actual.get(k))})
                 conditions = evidence_rows.get(expected.get('id'), {}).get('conditions', '') if target.startswith('relation:') else ''
                 glyph_missing, glyph_differences = glyph_review(target, expected, actual, conditions)
                 if missing or glyph_missing:
                     row['missing_observation_fields'] = missing + glyph_missing
-                else:
+                if not (missing or glyph_missing) or expected.get('relation') == 'modification':
                     differences = {k: {'expected': expected[k], 'observed': actual[k]}
-                                   for k in fields if actual[k] != expected[k]}
+                                   for k in fields if isinstance(actual.get(k), str)
+                                   and (actual[k].strip() or k == 'label')
+                                   and not (expected.get('relation') == 'modification' and k != 'label'
+                                            and _unresolved(actual[k])) and actual[k] != expected[k]}
                     differences.update(glyph_differences)
                     hard_differences = dict(differences)
+                    if expected.get('relation') == 'modification':
+                        hard_differences = {k:v for k,v in hard_differences.items() if v.get('certainty') != 'uncertain'}
                     if (target.startswith('relation:') and 'relation' in differences
                             and not opposed_relations(expected['relation'], actual['relation'])):
                         hard_differences.pop('relation')
@@ -282,7 +337,8 @@ def evaluate(contract, observation, image, evidence_ledger=None):
                             if actual.get('encoding') in allowed:
                                 hard_differences.pop('encoding', None)
                     row['status'] = (('CRITICAL_ERROR' if expected.get('critical', True) else 'NEEDS_REVIEW')
-                                     if hard_differences else 'NEEDS_REVIEW' if differences else 'PASS')
+                                     if hard_differences else 'NEEDS_REVIEW'
+                                     if differences or missing or glyph_missing else 'PASS')
                     if differences: row['differences'] = differences
         rows.append(row)
     # A correct requested edge does not exclude an extra, unsupported mechanism.

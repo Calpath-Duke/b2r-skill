@@ -74,3 +74,8 @@ PNG 输入按实际解码格式保留原字节（含元数据），使观察哈�
 复杂机制可在已有 host_observations 中加 figure_contract / scientific_observation，收录时保存三维 QA；字段与状态见 [scientific-qa.md](scientific-qa.md)。仅有正确请求或共同 Brief 哈希不能证明两张图片科学正确。修改必须重新查看并绑定新图哈希。
 
 复杂机制有外部核验时，将同一 `evidence_ledger` 放入现有 capture record 的 `host_observations`，与 `figure_contract` 和每张图各自的 `scientific_observation` 一起收录。capture 保存独立台账与 Evidence QA，不执行额外搜索。台账格式见 [evidence-verification.md](evidence-verification.md)；普通任务无需这些文件。
+# 文件结构与可审计性
+
+`capture` 的 qa.json 在 file_checks 中分列实际 PNG 解码和位图 PDF 导出属性，并将内部文字排版、内部几何审计明确标为 `NOT_AUDITABLE`。文件成功、可解码或 PDF 头尾完整不表示文字、编辑性或科学内容通过；已有宿主查看记录与 Scientific QA disposition 仍单独保留。
+
+程序化图件的 file_checks 按实际 SVG 结构记录 text/vector/image 元素；嵌入位图仅能部分审计独立矢量层，不声称整图可编辑。原生 SVG 中无 text 元素时不声称文字独立可编辑；外部或无法识别的 image 资源保持未分类。任意 PDF 仅做头尾检查时不推断内部是矢量；capture 的 Raster-only PDF 分类来自已知位图导出过程及实际图像 XObject。所有文件属性是能力与结构说明，不是新的 QA PASS。

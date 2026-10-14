@@ -1,5 +1,7 @@
 # Bench2Result · Free Scientific Visualization Skill
 
+当前版本 **0.3.9**，2026-10-14 小问题优化；内部构建 **0.3.9v1**。标准包与 WorkBuddy 格式包使用同一已验收科学核心。具体改进及验证边界见 [RELEASE_NOTES.md](RELEASE_NOTES.md) 和 [VALIDATION.md](VALIDATION.md)。
+
 中文描述科研需求，B2R 帮你规划图件，调用当前 AI 宿主的工具完成绘图，并接续自然语言修改。默认英文标注、Classic / Refined 两种二维方案；可说“只画一张”。定量图使用真实表格与代码。
 
 ## 安装

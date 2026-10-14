@@ -54,7 +54,7 @@ EXCLUDE = ('Draw each named object once unless the layout names a second appeara
            'chemical skeletal formulas, rings or bonds for drugs. No watermark.')
 
 # Image models drop or misplace these first, so they are stated before the flow.
-KEY = {'inhibition', 'neutralization', 'cleavage'}
+KEY = {'inhibition', 'neutralization', 'cleavage', 'modification'}
 CHAINABLE = {'activation', 'causation', 'conversion'}
 
 
@@ -207,7 +207,9 @@ def compile_correction(contract, report):
         t, diff = row['target'], row.get('differences', {})
         if row['status'] == 'PASS':
             if t in rels:
-                r = rels[t]; keep.append(f"{names[r['subject']]} {r['relation']} {names[r['object']]}")
+                r = rels[t]
+                keep.append(relation_instruction(r, names, kinds) if r['relation']=='modification'
+                            else f"{names[r['subject']]} {r['relation']} {names[r['object']]}")
             continue
         if row['status'] != 'CRITICAL_ERROR': continue
         where = f" (near {row['location']})" if row.get('location') else ''

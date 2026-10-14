@@ -4,7 +4,7 @@ from common import require, text_value, digest, write_json
 STATES = {'user_provided', 'source_statement', 'user_hypothesis',
           'author_hypothesis', 'ai_inference', 'visual_simplification'}
 RELATIONS = {'composition', 'binding', 'activation', 'inhibition', 'transport',
-             'conversion', 'release', 'causation', 'association'}
+             'conversion', 'release', 'causation', 'association', 'modification'}
 VISUAL_TARGETS = {'order', 'identity', 'style', 'layout', 'file'}
 TEXT_TARGETS = VISUAL_TARGETS | {'content', 'relations', 'labels', 'values'}
 
@@ -62,6 +62,9 @@ def validate_brief(brief):
                 'relation 端点必须引用已有科学对象')
         require(rel.get('type') in RELATIONS, 'relation 类型无效')
         require(rel.get('status') in STATES, 'relation 证据状态无效')
+        if rel['type'] == 'modification':
+            from visual_grammar import modification_marker
+            modification_marker(rel)
         require(rel['status'] != 'visual_simplification' or rel['type'] in {'composition', 'association'},
                 '视觉简化不能支持新增方向性生物关系')
         relation_ids.add(rel['id'])

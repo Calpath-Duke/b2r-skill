@@ -17,11 +17,14 @@ ENCODINGS = {
     'grouped': 'placed inside the family module or joined to its label by a bracket line',
     'line': 'plain line without arrowheads',
     'fragments': 'object drawn broken into fragments',
+    'attached_marker': 'modification marker attached to the substrate, with the actor identified separately',
 }
 OBSERVED_ENCODINGS = set(ENCODINGS) | {'none', 'unclear'}
 
 # relation -> (acceptable observed encodings, default encoding, request template)
 GRAMMAR = {
+    'modification': (('attached_marker',), 'attached_marker',
+                     '{s} modifies {o}; the marker belongs on the substrate, never on the actor'),
     'activation': (('arrow', 'dashed_arrow'), 'arrow',
                    'solid arrow from {s} whose arrowhead ends on {o}'),
     'inhibition': (('t_bar',), 't_bar',
@@ -57,6 +60,19 @@ DEPICTIONS = {
 }
 OBSERVED_DEPICTIONS = {'token', 'glyph', 'chemical_structure', 'verified_structure', 'unclear'}
 SMALL_MOLECULE_KINDS = {'small_molecule', 'small-molecule drug', 'compound'}
+MODIFICATION_MARKERS = {'phosphorylation': 'P', 'ubiquitination': 'Ub', 'acetylation': 'Ac'}
+
+
+def modification_marker(rel):
+    kind = text_value(rel.get('modification_type'), 'modification_type', 200)
+    marker = MODIFICATION_MARKERS.get(kind.casefold())
+    if marker is None:
+        marker = text_value(rel.get('marker'), 'explicit marker for other modification', 100)
+    elif 'marker' in rel:
+        require(rel['marker'] == marker, 'marker 与 modification_type 不一致')
+    if 'modification_site' in rel:
+        text_value(rel['modification_site'], 'source-specified modification_site', 400)
+    return marker
 
 
 def relation_encoding(rel):
@@ -77,6 +93,8 @@ def entity_depiction(entity):
 
 def validate_grammar(contract):
     for rel in contract['relations']:
+        if rel['relation'] == 'modification':
+            modification_marker(rel)
         if 'encoding' in rel:
             require(rel['encoding'] in GRAMMAR[rel['relation']][0],
                     f"{rel['id']} 的 encoding 与 {rel['relation']} 不相容")
@@ -97,6 +115,14 @@ def relation_instruction(rel, names, kinds=None):
     text = template.format(s=names[rel['subject']], o=names[rel['object']],
                            origin=names.get(rel.get('origin'), 'the origin'),
                            ssite=site('subject_site'), osite=site('object_site'))
+    if rel['relation'] == 'modification':
+        marker = modification_marker(rel)
+        location = (f" at the source-specified site {rel['modification_site']}"
+                    if rel.get('modification_site') else '; no residue/site is specified: do not invent one')
+        text = (f"{names[rel['subject']]} is the actor for {rel['modification_type']} of substrate "
+                f"{names[rel['object']]}{location}; attach the visible {marker} marker to "
+                f"{names[rel['object']]}, not to {names[rel['subject']]} or another object; "
+                'distinguish the actor-to-substrate action from the substrate-attached marker')
     if rel.get('encoding') == 'blocked' and rel['relation'] == 'binding':
         text = (f"{names[rel['subject']]} faces {names[rel['object']]}{site('object_site')} but their binding is shown "
                 "prevented: a small cross or bar between them, no connector arrow")
@@ -142,6 +168,12 @@ def checklist(contract, conditions=None):
                 'look_for': f"Which objects does the connector between {names[rel['subject']]} and "
                             f"{names[rel['object']]} actually touch, and what glyph sits at each end?",
                 'report': fields+['encoding'], 'encoding_options': sorted(OBSERVED_ENCODINGS)}
+        if rel['relation'] == 'modification':
+            item['report'] += ['modification_type', 'marker', 'attached_to']
+            if 'modification_site' in rel: item['report'].append('modification_site')
+            item['look_for'] += (' Identify the modifying actor and substrate separately. Report the actual '
+                                 'visible marker and the object it is attached to; marker presence alone '
+                                 'is insufficient. Report unclear attachment/site as unclear, not a guess.')
         if conditions.get(rel['id']):
             item['report'].append('condition_shown')
             item['condition_options'] = ['yes', 'no', 'unclear']

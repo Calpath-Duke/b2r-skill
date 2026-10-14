@@ -78,3 +78,13 @@
 修改或重新生成后的图仍逐项看图，旧图 PASS 不继承。`b2r.py qa --previous <上一版 QA 目录>`，或 `capture --parent` 指向上一版交付目录中的 figure.png/original，会在 scientific-qa.json 中写入 `revision`：fixed、improved（CRITICAL→待复核）、still_critical、regressed、unrequested_regressions（契约未变却变差，即修改波及了未要求的内容）、no_longer_confirmed（之前通过、这次未再确认）。`b2r.py render-plan --contract ... --qa scientific-qa.json --out ...` 输出 request-correction.txt：逐条写出要改的关系（含图中实际错误）、需保持不变的已通过关系与 strategy。
 
 记录检查通过不等于论文结论或图像已经专家认证。脚本不能识别像素或判断引文真伪；宿主真实读取论文、查看图片是不可替代的输入。
+
+## 通用分子修饰：作用者、底物与实际附着标记
+
+沿用 schema_version=1 和现有三轴 QA。Brief 的关系 `type: "modification"` 转为 Contract 的 `relation: "modification"`；`subject` 是修饰作用者，`object` 是被修饰底物，另列 `modification_type`。phosphorylation / ubiquitination / acetylation 默认标记分别为 P / Ub / Ac；其他明确来源的修饰需给出 `marker`，不猜测类型或符号。`modification_site` 可选，只有输入原话或可追溯来源确实给出位点时才写入；未指定不强制补齐，不根据蛋白名字编造。
+
+例如 `subject: "k", object: "s", modification_type: "phosphorylation", modification_site: "Ser65"` 表示 Kinase K 对 Protein S 的源材料指定修饰。生成要求将 P 附着在 Protein S 上，作用者与底物分开表现，不能把 P 放在 K 上；不为特定通路新增专属规则。Render Plan 与看图清单共用此关系。
+
+实际看图后，关系 observed 除 subject/relation/object/direction 外报告 `encoding: "attached_marker"`、`modification_type`、实际 `marker`、`attached_to`（标记实际附着的实体 ID）；契约声明了位点时才要求观察 `modification_site`。这些是图片或图层中的实际发现，不从生成请求补答案。只有 P/Ub/Ac 存在不足以 PASS：附着对象必须清楚且正确。明确错误目标、错误标记/类型或已指定位点冲突为 CRITICAL_ERROR；附着位置/位点不清、观察缺失为 NEEDS_REVIEW；已确认的错误不会因另一字段不清而被降级。未审查的记录仍待复核，测试的 synthetic_fixture 只验证记录处理，不能证明视觉模型已经可靠识别真实机制图。
+
+修饰类型/标记的字母大小写不单独构成科学冲突；明确的标准残基位点用单/三字母表示比较（如 Ser65 / S65、Lys42 / K42）。可确认不同残基或编号才形成位点冲突；自由文字位置、不能确认的类型别名保留 NEEDS_REVIEW，不当作确定错误。此处只比较已提供的表示，不推断未知位点或生物学事实；受保护的逐字标签仍由原 labels 检查。标准残基符号参考 [Biopython IUPAC 数据](https://github.com/biopython/biopython/blob/master/Bio/Data/IUPACData.py)。

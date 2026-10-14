@@ -3,7 +3,7 @@ from pathlib import Path
 import shutil
 import hashlib
 import json
-from common import fields,text_value,require,checked_input_file,write_json,digest,finish,finite
+from common import fields,text_value,require,checked_input_file,write_json,digest,finish,finite,verify_files
 
 
 def compare_edit(previous,current,regions):
@@ -95,6 +95,7 @@ def capture(image,record,folder,parent=None):
     rgba=im.convert('RGBA');paper=Image.new('RGBA',rgba.size,'white');paper.alpha_composite(rgba)
     paper.convert('RGB').save(folder/'figure.pdf','PDF',resolution=150,quality=95)
     details={'decoded':True,'pixels':list(im.size),'source_sha256':source_hash,'image_delivery':image_delivery,'pdf':'raster image on white; 150 dpi nominal layout, no added detail'}
+    details.update(verify_files(folder, raster_pdf=True))
     source_record={'kind':'host_image','original':'original/'+source.name,'original_sha256':digest(source),'calls':'calls.json','model':record['model'],'reproducibility':'Exact original bytes retained; model regeneration is not deterministic and is not invoked by this package.'}
     source_record.update(option_record)
     source_record['image_delivery']=image_delivery
@@ -118,7 +119,10 @@ def capture(image,record,folder,parent=None):
             write_json(folder/'evidence-ledger.json',observations['evidence_ledger'])
         if scientific_report['evidence_qa'] is not None:
             write_json(folder/'evidence-qa.json',scientific_report['evidence_qa'])
-    write_json(folder/'qa.json',{'file_checks':details,'visual_review':record.get('visual_review','PENDING'),'scientific_review':'PENDING','figure_quality_gate':gate,'scientific_qa':scientific_report})
+    write_json(folder/'qa.json',{'file_checks':details,
+        'auditability': {'text_layout':'NOT_AUDITABLE','internal_geometry':'NOT_AUDITABLE',
+                         'notice':'No internal raster geometry/OCR audit; file integrity and supplied host reviews remain separate.'},
+        'visual_review':record.get('visual_review','PENDING'),'scientific_review':'PENDING','figure_quality_gate':gate,'scientific_qa':scientific_report})
     notes='AI 科研插画已保存（PNG / PDF）。直接用自然语言继续修改，例如“提高标签可读性，保留科学关系与其余结构”。\n本版主体、文字和线条都在位图内；修改内部元素需宿主图片编辑，不是全图可编辑 SVG。原图与调用记录随附。'
     if option is not None:
         notes+='\n本文件方案：'+('A · Classic 2D' if option=='classic2d' else 'B · Refined 2D')+'；后续修改以此版本为基础，其他方案独立保留。'

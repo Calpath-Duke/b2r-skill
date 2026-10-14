@@ -160,67 +160,278 @@ def package_replay(folder, kind, input_name=None):
     (folder/'reproduce.py').write_text(runner,encoding='utf-8')
 
 
-def text_checks(fig):
-    """Real renderer bounds; screening only, not a scientific/layout certificate."""
+def _rendered_text_and_paths(fig):
+    """Observe one actual draw, including order, renderer fonts and rectangular clips.
+
+    Hooks are temporary and restored even on failure. No artist is moved or edited.
+    Complex clips, dashed strokes and bitmap interiors are deliberately not inferred.
+    """
     from matplotlib.text import Text
+    from matplotlib.textpath import TextPath
+    from matplotlib.mathtext import MathTextParser
+    from matplotlib.transforms import Affine2D, Bbox
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
+    texts, strokes, covers, saved = [], [], [], []
+    math_parser = MathTextParser('path')
+    active, sequence, annotation_arrow = [None], [0], [False]
+    def state(gc):
+        clip = gc.get_clip_rectangle()
+        return {'clip': clip.frozen() if clip is not None else None,
+                'complex_clip': gc.get_clip_path()[0] is not None}
+    def order():
+        sequence[0] += 1
+        return sequence[0]
+    def hook(obj, name, replacement):
+        saved.append((obj, name, name in vars(obj), vars(obj).get(name)))
+        setattr(obj, name, replacement)
+    original_text, original_path = renderer.draw_text, renderer.draw_path
+    def draw_text(gc, x, y, s, prop, angle, ismath=False, mtext=None):
+        t = mtext if mtext is not None else active[0]
+        if t is not None and gc.get_rgb()[-1] > 0 and s.strip():
+            record = {'artist': t, 'order': order(), 'em_pixels': renderer.points_to_pixels(prop.get_size_in_points()),
+                      'glyph': None, **state(gc)}
+            if ismath:
+                # The actual math layout contains smaller script runs. A base
+                # Text fontsize alone would miss sub/superscripts below 6 pt.
+                parsed = math_parser.parse(s, dpi=renderer.dpi, prop=prop)
+                if parsed.glyphs:
+                    record['em_pixels'] = min(renderer.points_to_pixels(g[1]) for g in parsed.glyphs)
+                else:
+                    return original_text(gc, x, y, s, prop, angle, ismath=ismath, mtext=mtext)
+            if not ismath and not record['complex_clip']:
+                glyph = TextPath((0, 0), s, prop=prop, size=prop.get_size_in_points())
+                y_display = renderer.get_canvas_width_height()[1] - y if renderer.flipy() else y
+                record['glyph'] = glyph.transformed(Affine2D().scale(renderer.points_to_pixels(1)).rotate_deg(angle).translate(x, y_display))
+            texts.append(record)
+        return original_text(gc, x, y, s, prop, angle, ismath=ismath, mtext=mtext)
+    def draw_path(gc, path, transform, rgbFace=None):
+        n = order()
+        transformed = path.transformed(transform)
+        style = state(gc)
+        if rgbFace is not None and len(rgbFace) == 4 and rgbFace[-1] == 1 and gc.get_alpha() == 1:
+            covers.append({'path': transformed, 'order': n, **style})
+        if (active[0] is None or annotation_arrow[0]) and gc.get_linewidth() > 0 and gc.get_rgb()[-1] > 0 and not gc.get_dashes()[1] and not style['complex_clip']:
+            strokes.append({'path': transformed, 'order': n, **style})
+        return original_path(gc, path, transform, rgbFace)
+    original_image = renderer.draw_image
+    def draw_image(gc, x, y, im, *args, **kwargs):
+        # An overlaid bitmap can hide a crossing. Its interior is not audited.
+        covers.append({'box': Bbox.from_bounds(x, y, im.shape[1], im.shape[0]), 'order': order(), **state(gc)})
+        return original_image(gc, x, y, im, *args, **kwargs)
+    try:
+        hook(renderer, 'draw_text', draw_text)
+        hook(renderer, 'draw_path', draw_path)
+        hook(renderer, 'draw_image', draw_image)
+        for t in fig.findobj(Text):
+            arrow = getattr(t, 'arrow_patch', None)
+            if arrow is not None:
+                arrow_original = arrow.draw
+                def draw_arrow(r, original=arrow_original):
+                    previous = annotation_arrow[0]; annotation_arrow[0] = True
+                    try: return original(r)
+                    finally: annotation_arrow[0] = previous
+                hook(arrow, 'draw', draw_arrow)
+            original = t.draw
+            def draw(r, t=t, original=original):
+                previous = active[0]; active[0] = t
+                try: return original(r)
+                finally: active[0] = previous
+            hook(t, 'draw', draw)
+        fig.canvas.draw()
+    finally:
+        for obj, name, existed, value in reversed(saved):
+            if existed: setattr(obj, name, value)
+            else: delattr(obj, name)
+    return renderer, texts, strokes, covers
+
+
+def _segments(path):
+    from matplotlib.path import Path as MPath
+    start = previous = None
+    for point, code in path.iter_segments(curves=False, simplify=False):
+        if code == MPath.MOVETO: start = previous = tuple(point)
+        elif code == MPath.LINETO:
+            current = tuple(point)
+            if previous is not None: yield previous, current
+            previous = current
+        elif code == MPath.CLOSEPOLY and previous is not None and start is not None:
+            yield previous, start
+            previous = start
+
+
+def _clipped_segment(a, b, box):
+    """Liang-Barsky clipping of an actual stroke centreline."""
+    lo, hi = 0., 1.
+    dx, dy = b[0]-a[0], b[1]-a[1]
+    for p, q in [(-dx,a[0]-box.x0),(dx,box.x1-a[0]),(-dy,a[1]-box.y0),(dy,box.y1-a[1])]:
+        if p == 0:
+            if q < 0: return None
+        elif p < 0: lo = max(lo, q/p)
+        else: hi = min(hi, q/p)
+    if lo > hi: return None
+    return ((a[0]+lo*dx,a[1]+lo*dy),(a[0]+hi*dx,a[1]+hi*dy))
+
+
+def _intersection(a, b, c, d):
+    dx, dy, ex, ey = b[0]-a[0], b[1]-a[1], d[0]-c[0], d[1]-c[1]
+    denom = dx*ey-dy*ex
+    if abs(denom) < 1e-9: return None  # Coincident/tangent strokes stay uncertain.
+    cx, cy = c[0]-a[0], c[1]-a[1]
+    t, u = (cx*ey-cy*ex)/denom, (cx*dy-cy*dx)/denom
+    return (a[0]+t*dx,a[1]+t*dy) if 0 <= t <= 1 and 0 <= u <= 1 else None
+
+
+def _covered(point, order, covers):
+    for cover in covers:
+        if cover['order'] <= order: continue
+        if cover['clip'] is not None and not cover['clip'].contains(*point): continue
+        if cover['complex_clip']: return True  # Cannot prove this later overlay leaves ink visible.
+        if 'box' in cover and cover['box'].contains(*point): return True
+        if 'path' in cover and cover['path'].contains_point(point): return True
+    return False
+
+
+def text_checks(fig, final_size_mm=None, min_font_pt=6):
+    """Final-size text screening from renderer operations, never scientific QA.
+
+    final_size_mm is only for a known subsequent physical resize; normal exports
+    use the Figure's actual physical size. Position transforms do not themselves
+    scale Matplotlib Text glyphs. Font em pixels come from the real renderer.
+    """
+    from matplotlib.transforms import Bbox
+    from matplotlib.path import Path as MPath
+    renderer, rendered, strokes, covers = _rendered_text_and_paths(fig)
     page = fig.bbox
-    labels, issues = [], []
-    hidden_ticks=set()
-    for ax in fig.axes:
-        for axis in [ax.xaxis,ax.yaxis]:
-            low,high=sorted(axis.get_view_interval())
-            for tick in axis.get_major_ticks()+axis.get_minor_ticks():
-                # Matplotlib creates locator labels outside the visible view.
-                # Those Text objects report visible=True but are never drawn.
-                if tick.get_loc()<low-1e-9 or tick.get_loc()>high+1e-9:
-                    hidden_ticks.update([id(tick.label1),id(tick.label2)])
-    for t in fig.findobj(Text):
-        if id(t) in hidden_ticks or not t.get_visible() or not t.get_text():
-            continue
+    size = list(final_size_mm) if final_size_mm is not None else [v*25.4 for v in fig.get_size_inches()]
+    require(len(size) == 2, 'final_size_mm 需为 [width, height]')
+    for value in size: finite(value, 'final size', 0.01)
+    finite(min_font_pt, 'min_font_pt', 0)
+    pt_per_pixel = min(size[0]*72/25.4/page.width, size[1]*72/25.4/page.height)
+    labels, issues, seen = [], [], set()
+    for record in rendered:
+        t = record['artist']
+        if id(t) in seen: continue
+        seen.add(id(t))
         b = t.get_window_extent(renderer)
-        if b.width == 0 or b.height == 0:
-            continue
+        tight = t.get_tightbbox(renderer)
+        if tight is None or not tight.overlaps(page) or b.width == 0 or b.height == 0: continue
+        runs = [r for r in rendered if r['artist'] is t]
+        corners = [(b.x0,b.y0),(b.x1,b.y0),(b.x0,b.y1),(b.x1,b.y1)]
+        if all(_covered(p, max(r['order'] for r in runs), covers) for p in corners): continue
         if b.x0 < page.x0 - 1 or b.y0 < page.y0 - 1 or b.x1 > page.x1 + 1 or b.y1 > page.y1 + 1:
             issues.append({'kind': 'text_outside_page', 'text': t.get_text()})
+        effective = min(r['em_pixels'] for r in runs)*pt_per_pixel
+        if effective < min_font_pt-1e-8:
+            issues.append({'kind': 'text_small', 'text': t.get_text(), 'effective_font_pt': round(effective, 3), 'threshold_pt': min_font_pt})
         labels.append((t, b))
-    # Tick offsets / intentionally invisible text are already excluded above.
+        crossed = False
+        for run in runs:
+            glyph = run['glyph']
+            if glyph is None: continue
+            ink = glyph.get_extents()
+            glyph_segments = list(_segments(glyph))
+            for stroke in strokes:
+                if stroke['order'] <= run['order'] or not ink.overlaps(stroke['path'].get_extents()): continue
+                clips = [page] + [c for c in (run['clip'],stroke['clip']) if c is not None]
+                clip = Bbox.intersection(clips[0], clips[1]) if len(clips)>1 else page
+                for c in clips[2:]: clip = Bbox.intersection(clip, c) if clip is not None else None
+                if clip is None: continue
+                for a,b_ in _segments(stroke['path']):
+                    segment = _clipped_segment(a,b_,clip)
+                    if segment is None or not MPath(segment).intersects_path(glyph, filled=False): continue
+                    hits = [p for c,d in glyph_segments if (p := _intersection(*segment,c,d)) is not None and not _covered(p, stroke['order'], covers)]
+                    if len(hits)>1 and any(math.dist(hits[0],p)>1 for p in hits[1:]):
+                        issues.append({'kind':'text_crossed_by_line','text':t.get_text(),
+                                       'basis':'visible solid stroke drawn after text intersects actual glyph outlines',
+                                       'draw_order':stroke['order']})
+                        crossed = True; break
+                if crossed: break
+            if crossed: break
     for i, (a, ba) in enumerate(labels):
         for b, bb in labels[i+1:]:
             if ba.overlaps(bb):
                 issues.append({'kind': 'text_overlap', 'texts': [a.get_text(), b.get_text()]})
     return {'screening': 'REVIEW_REQUIRED' if issues else 'NO_TEXT_BOUND_ISSUES_DETECTED',
             'issues': issues, 'manual_visual_review': 'PENDING', 'scientific_review': 'PENDING',
-            'notice': '仅真实渲染的文本边界筛查；未检查所有线条、图片或科学关系。'}
+            'final_size_mm': size, 'rendered_text_objects': len(labels),
+            'notice': '最终物理尺寸、实际渲染字体（含 mathtext 子/上标）与有限字形交叉筛查；复杂裁切、虚线、数学字形压线、路径特效、外部 TeX 及位图内部需人工查看，不是全面排版或科学认证。'}
 
 
-def verify_files(folder):
+def verify_files(folder, *, raster_pdf=False):
+    """Integrity and actual structure only; these properties are never a QA PASS.
+
+    raster_pdf is used only by capture's known bitmap-to-PDF producer. Arbitrary
+    PDF streams are not classified as vector/editable from their suffix/header.
+    """
     import xml.etree.ElementTree as ET
+    import base64
+    import io
     from PIL import Image
     from fontTools.ttLib import TTFont
-    font = TTFont(FONT)
-    cmap = font.getBestCmap()
     details = {}
     for name in ['figure.svg', 'figure-outlined.svg']:
+        if not (folder / name).is_file(): continue
         tree = ET.parse(folder / name)
+        require(tree.getroot().tag.rsplit('}', 1)[-1] == 'svg', 'XML 根节点不是 SVG')
         texts = tree.findall('.//{http://www.w3.org/2000/svg}text')
-        missing = sorted({c for t in texts for c in ''.join(t.itertext()) if ord(c) not in cmap and not c.isspace()})
+        with TTFont(FONT) as font:
+            cmap = font.getBestCmap()
+            missing = sorted({c for t in texts for c in ''.join(t.itertext()) if ord(c) not in cmap and not c.isspace()})
         require(not missing, f'字体不支持字符：{" ".join(missing)}')
+        rasters = len(tree.findall('.//{http://www.w3.org/2000/svg}image'))
+        verified_rasters = 0
+        for image in tree.findall('.//{http://www.w3.org/2000/svg}image'):
+            href = image.get('href') or image.get('{http://www.w3.org/1999/xlink}href', '')
+            if href.startswith('data:') and ';base64,' in href:
+                try:
+                    with Image.open(io.BytesIO(base64.b64decode(''.join(href.split(',', 1)[1].split()), validate=True))) as asset:
+                        asset.verify()
+                        verified_rasters += 1
+                except (ValueError, OSError):
+                    pass  # External/vector/unknown assets never justify an all-vector claim.
+        vectors = sum(e.tag.rsplit('}', 1)[-1] in
+                      {'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'use'}
+                      for e in tree.iter())
         details[name] = {'parsed': True, 'text_elements': len(texts),
-                         'raster_elements': len(tree.findall('.//{http://www.w3.org/2000/svg}image'))}
-    with Image.open(folder / 'figure.png') as im:
-        im.load()
-        details['figure.png'] = {'decoded': True, 'pixels': list(im.size)}
-    payload = (folder / 'figure.pdf').read_bytes()
-    require(payload.startswith(b'%PDF-') and b'%%EOF' in payload[-1024:], 'PDF 文件不完整')
-    details['figure.pdf'] = {'header_and_eof_checked': True}
+                         'vector_elements': vectors, 'raster_elements': rasters,
+                         'verified_embedded_raster_elements': verified_rasters,
+                         'content_kind': 'MIXED_SVG_WITH_RASTER_ASSETS' if verified_rasters else
+                                         'SVG_WITH_UNCLASSIFIED_IMAGE_ASSETS' if rasters else
+                                         'NATIVE_VECTOR_SVG' if vectors or texts else 'SVG_NO_RENDERABLE_ELEMENTS',
+                         'editability': {'text_elements_present': bool(texts),
+                                         'vector_elements_present': bool(vectors),
+                                         'embedded_raster_editable': False},
+                         'auditability': {'text_layout': 'PARTIAL' if rasters and texts else
+                                          'STRUCTURED_TEXT_AVAILABLE' if texts else 'NOT_AUDITABLE',
+                                          'internal_geometry': 'PARTIAL' if rasters and vectors else
+                                          'NOT_AUDITABLE' if rasters else 'STRUCTURED_VECTOR_AVAILABLE'},
+                         'notice': 'Structure counts include definitions; presence does not prove full editability or a completed visual/scientific review.'}
+    if (folder / 'figure.png').is_file():
+        with Image.open(folder / 'figure.png') as im:
+            im.load()
+            details['figure.png'] = {'decoded': True, 'pixels': list(im.size),
+                                    'content_kind': 'RASTER_'+im.format,
+                                    'editability': {'independent_text_or_vectors': False},
+                                    'auditability': {'text_layout': 'NOT_AUDITABLE', 'internal_geometry': 'NOT_AUDITABLE'}}
+    if (folder / 'figure.pdf').is_file():
+        payload = (folder / 'figure.pdf').read_bytes()
+        require(payload.startswith(b'%PDF-') and b'%%EOF' in payload[-1024:], 'PDF 文件不完整')
+        if raster_pdf:
+            require(re.search(rb'/Subtype\s*/Image\b', payload), '位图 PDF 未找到图像 XObject')
+        details['figure.pdf'] = {'header_and_eof_checked': True,
+                                 'content_kind': 'RASTER_ONLY_PDF' if raster_pdf else 'PDF_CONTENT_NOT_CLASSIFIED',
+                                 'classification_basis': 'known capture bitmap export + image XObject' if raster_pdf else 'header/EOF only; no PDF content parser',
+                                 'editability': {'independent_text_or_vectors': False if raster_pdf else 'NOT_VERIFIED'},
+                                 'auditability': {'text_layout': 'NOT_AUDITABLE' if raster_pdf else 'NOT_VERIFIED',
+                                                  'internal_geometry': 'NOT_AUDITABLE' if raster_pdf else 'NOT_VERIFIED'}}
     return details
 
 
 def finish(folder, manifest, notes, qa=None):
     if qa is not None:
         qa['file_checks'] = verify_files(folder)
+        qa['auditability'] = {name: check['auditability'] for name, check in qa['file_checks'].items()}
         write_json(folder / 'qa.json', qa)
     atomic_write_bytes(folder / '交付说明.md', ('# B2R 交付\n\n' + notes + '\n').encode())
     status = manifest.get('status', 'GENERATED_REVIEW_PENDING')
